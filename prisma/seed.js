@@ -1,15 +1,18 @@
 const { PrismaClient } = require('@prisma/client');
+const res = require('express/lib/response');
 const prisma = new PrismaClient();
 
 async function seed() {
-    await createCustomer();
+    const customer = await createCustomer();
     const movies = await createMovies();
     const screens = await createScreens();
     await createScreenings(screens, movies);
+    await createTickets(customer, screens);
     await createSeats(screens);
     process.exit(0);
 }
 
+// create a customer=================================
 async function createCustomer() {
     const customer = await prisma.customer.create({
         data: {
@@ -29,6 +32,7 @@ async function createCustomer() {
     return customer;
 }
 
+// create movies========================================
 async function createMovies() {
     const rawMovies = [
         { title: 'The Matrix', runtimeMins: 120 },
@@ -43,6 +47,7 @@ async function createMovies() {
     return movies;
 }
 
+// create screens=======================================
 async function createScreens() {
     const rawScreens = [
         { number: 1 }, { number: 2 }
@@ -58,6 +63,7 @@ async function createScreens() {
     return screens;
 }
 
+// create screening====================================
 async function createScreenings(screens, movies) {
     const screeningDate = new Date();
     for (const screen of screens) {
@@ -84,13 +90,15 @@ async function createScreenings(screens, movies) {
     }
 }
 
+// create seats=========================================
 async function createSeats(screens) {
-    const numberOfSeats = 5;
+    const numberOfSeats = 2;
+
     for(let i = 0; i < screens.length; i++){
         for(let j = 1; j <= numberOfSeats; j++){
             const seat = await prisma.seat.create({
                 data: {
-                    number: j,
+                    numberOfSeat: j,
                     screen: {
                         connect: {
                             id: screens[i].id
@@ -101,9 +109,46 @@ async function createSeats(screens) {
             console.log('seat created', seat);
         }
     }
-    
-    
 }
+
+// create tickets======================================
+async function createTickets(customer, screens){
+    const ticket = await prisma.ticket.create({
+        data: {
+            screening: {
+                create: {
+                    screenId: 1,
+                    movieId: 1,
+                    startsAt: new Date(),
+                }
+            },
+            customer: {
+                connect: {
+                    id: customer.id
+                }
+            },
+            seats: {
+                create: [
+                    {
+                        seat: {
+                            create: {
+                                numberOfSeat: 1,
+                                screen: {
+                                    connect: {
+                                        id: screens[0].id
+                                    }
+                                }
+                            }
+                        
+                        }
+                    }
+                ]
+            }
+        }
+    })
+    console.log('ticket created', ticket);
+}
+
 
 seed()
     .catch(async e => {

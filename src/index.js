@@ -16,10 +16,13 @@ app.use(express.urlencoded({ extended: true }));
 
 
 
-// Add your router below
+// routes========================================
+const ticketRouter = require("./routers/ticket");
+const seatRouter = require("./routers/seat");
 
-
-
+// use routes====================================
+app.use("/ticket", ticketRouter);
+app.use("/seat", seatRouter);
 
 
 
